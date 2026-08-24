@@ -263,8 +263,56 @@ def col2im(cols, input_shape, kernel_h, kernel_w, stride, padding):
 
     return images
 
-# Step 17 - conv2d_forward (not yet solved)
-# TODO: implement
+# Step 17 - conv2d_forward
+def conv2d_forward(x, weights, bias, stride, padding):
+    # Convolve x with weights using im2col, add bias,
+    # and return the output and backpropagation cache.
+
+    N, C, H, W = x.shape
+    C_out, C_in, kernel_h, kernel_w = weights.shape
+
+    # Calculate output spatial dimensions
+    out_h = output_spatial_size(H, kernel_h, stride, padding)
+    out_w = output_spatial_size(W, kernel_w, stride, padding)
+
+    # Convert every input patch into one row
+    # Shape: (N * out_h * out_w, C_in * kernel_h * kernel_w)
+    cols = im2col(
+        x,
+        kernel_h,
+        kernel_w,
+        stride,
+        padding
+    )
+
+    # Flatten each convolution filter into one row
+    # Shape: (C_out, C_in * kernel_h * kernel_w)
+    weights_flat = weights.reshape(C_out, -1)
+
+    # Apply all filters to all patches and add bias
+    # Shape: (N * out_h * out_w, C_out)
+    conv = cols @ weights_flat.T + bias
+
+    # Restore spatial dimensions
+    # Shape: (N, out_h, out_w, C_out)
+    conv = conv.reshape(N, out_h, out_w, C_out)
+
+    # Convert NHWC to NCHW
+    # Shape: (N, C_out, out_h, out_w)
+    output = conv.transpose(0, 3, 1, 2)
+
+    # Save values required during backpropagation
+    cache = {
+        "x_shape": x.shape,
+        "weights": weights,
+        "cols": cols,
+        "stride": stride,
+        "padding": padding,
+        "kernel_h": kernel_h,
+        "kernel_w": kernel_w
+    }
+
+    return output, cache
 
 # Step 18 - conv2d_grad_input (not yet solved)
 # TODO: implement
